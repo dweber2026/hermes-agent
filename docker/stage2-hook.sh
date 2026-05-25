@@ -107,7 +107,14 @@ seed_one() {
         s6-setuidgid hermes cp "$INSTALL_DIR/$src" "$HERMES_HOME/$dest"
     fi
 }
-seed_one ".env" ".env.example"
+# Bootstrap .env from HERMES_ENV_BOOTSTRAP env var if provided (Railway deployment pattern)
+# This allows passing API keys via Railway service variables without needing a pre-seeded volume.
+if [ ! -f "$HERMES_HOME/.env" ] && [ -n "${HERMES_ENV_BOOTSTRAP:-}" ]; then
+    printf '%s' "$HERMES_ENV_BOOTSTRAP" | s6-setuidgid hermes tee "$HERMES_HOME/.env" >/dev/null
+    echo "[stage2] Seeded .env from HERMES_ENV_BOOTSTRAP"
+else
+    seed_one ".env" ".env.example"
+fi
 seed_one "config.yaml" "cli-config.yaml.example"
 seed_one "SOUL.md" "docker/SOUL.md"
 
