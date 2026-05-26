@@ -36,6 +36,13 @@ cd "$_hermes_home"
 # shellcheck disable=SC1091
 . /opt/hermes/.venv/bin/activate
 
+# Chown HERMES_HOME to hermes user — runs AFTER volume mount (CMD runs post-volume).
+# Fixes stale root-owned dirs/files left by previous crash writes on the volume.
+if [ -d "$_hermes_home" ]; then
+    chown -R hermes:hermes "$_hermes_home" 2>/dev/null || true
+    echo "[main-wrapper] chowned $_hermes_home to hermes"
+fi
+
 if [ $# -eq 0 ]; then
     exec s6-setuidgid hermes hermes
 fi
