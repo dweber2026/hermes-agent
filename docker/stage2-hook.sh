@@ -107,14 +107,24 @@ seed_one() {
         s6-setuidgid hermes cp "$INSTALL_DIR/$src" "$HERMES_HOME/$dest"
     fi
 }
-# Bootstrap .env from HERMES_ENV_BOOTSTRAP env var if provided (Railway deployment pattern).
-# When set, always overwrite .env — Railway env vars take precedence over any stale volume copy.
-# This handles the case where a blank .env.example was already seeded from a prior crash.
-if [ -n "${HERMES_ENV_BOOTSTRAP:-}" ]; then
-    printf '%s' "$HERMES_ENV_BOOTSTRAP" | s6-setuidgid hermes tee "$HERMES_HOME/.env" >/dev/null
+# Build .env from individual Railway env vars if any are set.
+# This is more reliable than a multiline HERMES_ENV_BOOTSTRAP var.
+# Individual vars (OPENROUTER_API_KEY etc.) are always written when present,
+# overwriting any stale volume .env. This runs on every boot.
+_dot_env_written=false
+{
+  [ -n "${OPENROUTER_API_KEY:-}" ]     && printf 'OPENROUTER_API_KEY=%s\n' "$OPENROUTER_API_KEY"
+  [ -n "${OPENAI_API_KEY:-}" ]         && printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY"
+  [ -n "${TELEGRAM_BOT_TOKEN:-}" ]     && printf 'TELEGRAM_BOT_TOKEN=%s\n' "$TELEGRAM_BOT_TOKEN"
+  [ -n "${TELEGRAM_ALLOWED_USERS:-}" ] && printf 'TELEGRAM_ALLOWED_USERS=%s\n' "$TELEGRAM_ALLOWED_USERS"
+  [ -n "${TELEGRAM_HOME_CHANNEL:-}" ]  && printf 'TELEGRAM_HOME_CHANNEL=%s\n' "$TELEGRAM_HOME_CHANNEL"
+  [ -n "${LLM_MODEL:-}" ]              && printf 'LLM_MODEL=%s\n' "$LLM_MODEL"
+  [ -n "${ANTHROPIC_API_KEY:-}" ]      && printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_API_KEY"
+} | s6-setuidgid hermes tee "$HERMES_HOME/.env" >/dev/null && _dot_env_written=true
+if [ "$_dot_env_written" = true ]; then
     chown hermes:hermes "$HERMES_HOME/.env" 2>/dev/null || true
     chmod 600 "$HERMES_HOME/.env" 2>/dev/null || true
-    echo "[stage2] Seeded .env from HERMES_ENV_BOOTSTRAP"
+    echo "[stage2] Seeded .env from Railway environment variables"
 else
     seed_one ".env" ".env.example"
 fi
