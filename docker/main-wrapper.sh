@@ -1,19 +1,8 @@
 #!/bin/sh
-# /opt/hermes/docker/main-wrapper.sh — wraps the container's CMD with
-# the same argument-routing logic the pre-s6 entrypoint.sh used. Runs
-# as /init's "main program" (Docker CMD) so it inherits stdin/stdout/
-# stderr from the container.
-#
-# Routing:
-#   no args                       → exec `hermes` (the default)
-#   first arg is an executable    → exec it directly (sleep, bash, sh, …)
-#   first arg is anything else    → exec `hermes <args>` (subcommand passthrough)
-#
-# We drop to the hermes user via `s6-setuidgid` so the supervised
-# workload runs unprivileged (UID 10000 by default).
+# /opt/hermes/docker/main-wrapper.sh
 set -e
 
-# Resolve HERMES_HOME from s6 container environment (Railway env vars live here)
+# Resolve HERMES_HOME from s6 container environment (Railway env vars live here).
 # s6-overlay stores Railway-injected env vars in /run/s6/container_environment/
 _hermes_home="/opt/data"
 if [ -f /run/s6/container_environment/HERMES_HOME ]; then
@@ -23,35 +12,31 @@ elif [ -n "${HERMES_HOME:-}" ]; then
 fi
 export HERMES_HOME="$_hermes_home"
 
-# If Railway env vars are present (OPENROUTER_API_KEY in s6 container env),
-# remove any .env file so Hermes reads keys directly from os.environ.
-# A stale .env from a prior crash would override Railway vars via dotenv override=True.
+# If Railway injects OPENROUTER_API_KEY, remove any stale .env on the volume.
+# A blank .env seeded from .env.example overrides Railway env vars via dotenv override=True.
 _or_key_env="/run/s6/container_environment/OPENROUTER_API_KEY"
 if [ -f "$_or_key_env" ] && [ -f "$HERMES_HOME/.env" ]; then
-    echo "[main-wrapper] Railway env detected — removing stale .env to use Railway vars"
+    echo "[main-wrapper] Railway env vars detected — removing stale .env"
     rm -f "$HERMES_HOME/.env"
 fi
+
+# Chown HERMES_HOME to hermes user. This script runs as the CMD main program,
+# which executes AFTER the volume mounts — so chown sees the real volume contents.
+if [ -d "$_hermes_home" ]; then
+    chown -R hermes:hermes "$_hermes_home" 2>/dev/null || true
+    echo "[main-wrapper] chowned $_hermes_home to hermes"
 fi
 
 cd "$_hermes_home"
 # shellcheck disable=SC1091
 . /opt/hermes/.venv/bin/activate
 
-# Chown HERMES_HOME to hermes user — runs AFTER volume mount (CMD runs post-volume).
-# Fixes stale root-owned dirs/files left by previous crash writes on the volume.
-if [ -d "$_hermes_home" ]; then
-    chown -R hermes:hermes "$_hermes_home" 2>/dev/null || true
-    echo "[main-wrapper] chowned $_hermes_home to hermes"
-fi
-
 if [ $# -eq 0 ]; then
     exec s6-setuidgid hermes hermes
 fi
 
 if command -v "$1" >/dev/null 2>&1; then
-    # Bare executable — pass through directly.
     exec s6-setuidgid hermes "$@"
 fi
 
-# Hermes subcommand pass-through.
 exec s6-setuidgid hermes hermes "$@"
