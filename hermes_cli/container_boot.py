@@ -290,12 +290,18 @@ def _write_reconcile_log(
         log.warning("could not rotate %s: %s", log_path, exc)
 
     ts = time.strftime("%Y-%m-%dT%H:%M:%S%z")
-    with log_path.open("a", encoding="utf-8") as f:
-        for a in actions:
-            f.write(
-                f"{ts} profile={a.profile} prior_state={a.prior_state} "
-                f"action={a.action}\n"
-            )
+    try:
+        with log_path.open("a", encoding="utf-8") as f:
+            for a in actions:
+                f.write(
+                    f"{ts} profile={a.profile} prior_state={a.prior_state} "
+                    f"action={a.action}\n"
+                )
+    except OSError as exc:
+        # Log write failure is non-fatal — volume may not be mounted yet
+        # (Railway mounts volumes after cont-init.d). Log to stderr and continue.
+        import sys
+        print(f"[container-boot] Warning: could not write log {log_path}: {exc}", file=sys.stderr)
 
 
 # 256 KiB soft cap on container-boot.log; rotated to .1 when crossed.
