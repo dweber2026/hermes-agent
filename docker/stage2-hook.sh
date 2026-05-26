@@ -158,6 +158,12 @@ if [ -d "$INSTALL_DIR/skills" ]; then
         || echo "[stage2] Warning: skills_sync.py failed; continuing"
 fi
 
+# Unconditional chown of HERMES_HOME to hermes — fixes stale root-owned files on volume
+# from prior crashes where the volume was written as root.
+if [ -d "$HERMES_HOME" ]; then
+    chown -R hermes:hermes "$HERMES_HOME" 2>/dev/null || true
+fi
+
 echo "[stage2] Setup complete; starting user services"
 
 # DO NOT seed .env from .env.example — Railway injects API keys as env vars directly.
