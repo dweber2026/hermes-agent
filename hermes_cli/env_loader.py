@@ -234,9 +234,22 @@ def load_hermes_dotenv(
     if project_env_path and project_env_path.exists():
         _sanitize_env_file_if_needed(project_env_path)
 
-    if user_env.exists():
+    # Railway deployment guard: if OPENROUTER_API_KEY is already in os.environ
+    # (injected by Railway), skip loading .env to prevent a stale volume .env
+    # from overriding Railway's injected values via override=True.
+    _skip_user_env = (
+        user_env.exists()
+        and os.environ.get('OPENROUTER_API_KEY')
+        and os.environ.get('RAILWAY_ENVIRONMENT')
+    )
+    if user_env.exists() and not _skip_user_env:
         _load_dotenv_with_fallback(user_env, override=True)
         loaded.append(user_env)
+    elif _skip_user_env:
+        import logging as _log
+        _log.getLogger(__name__).debug(
+            'Skipping .env load — Railway env vars present (OPENROUTER_API_KEY in os.environ)'
+        )
 
     if project_env_path and project_env_path.exists():
         _load_dotenv_with_fallback(project_env_path, override=not loaded)
