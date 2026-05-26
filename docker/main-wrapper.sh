@@ -23,13 +23,14 @@ elif [ -n "${HERMES_HOME:-}" ]; then
 fi
 export HERMES_HOME="$_hermes_home"
 
-# If .env exists but has no real API keys (stale blank seed from .env.example),
-# remove it so Hermes falls back to reading keys from os.environ (Railway vars).
-if [ -f "$HERMES_HOME/.env" ]; then
-    if ! grep -q "OPENROUTER_API_KEY=sk\|OPENAI_API_KEY=sk\|ANTHROPIC_API_KEY=sk\|OPENROUTER_API_KEY=[a-zA-Z0-9_-]" "$HERMES_HOME/.env" 2>/dev/null; then
-        echo "[main-wrapper] Removing stale blank .env (no API keys found)"
-        rm -f "$HERMES_HOME/.env"
-    fi
+# If Railway env vars are present (OPENROUTER_API_KEY in s6 container env),
+# remove any .env file so Hermes reads keys directly from os.environ.
+# A stale .env from a prior crash would override Railway vars via dotenv override=True.
+_or_key_env="/run/s6/container_environment/OPENROUTER_API_KEY"
+if [ -f "$_or_key_env" ] && [ -f "$HERMES_HOME/.env" ]; then
+    echo "[main-wrapper] Railway env detected — removing stale .env to use Railway vars"
+    rm -f "$HERMES_HOME/.env"
+fi
 fi
 
 cd "$_hermes_home"
