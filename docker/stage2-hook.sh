@@ -158,7 +158,9 @@ if [ -d "$INSTALL_DIR/skills" ]; then
         || echo "[stage2] Warning: skills_sync.py failed; continuing"
 fi
 
-echo "[stage2] Setup complete; starting user services"# Seed .env from Railway env vars using Python (runs as root — env accessible).
+echo "[stage2] Setup complete; starting user services"
+
+# Seed .env from Railway env vars using Python script running as root.
 python3 "$INSTALL_DIR/docker/seed-env.py" || true
 seed_one "config.yaml" "cli-config.yaml.example"
 seed_one "SOUL.md" "docker/SOUL.md"
