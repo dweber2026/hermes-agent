@@ -158,4 +158,37 @@ if [ -d "$INSTALL_DIR/skills" ]; then
         || echo "[stage2] Warning: skills_sync.py failed; continuing"
 fi
 
+echo "[stage2] Setup complete; starting user services"# Seed .env from Railway env vars using Python (runs as root — env accessible).
+python3 "$INSTALL_DIR/docker/seed-env.py" || true
+seed_one "config.yaml" "cli-config.yaml.example"
+seed_one "SOUL.md" "docker/SOUL.md"
+
+# .env holds API keys and secrets — restrict to owner-only access. Applied
+# unconditionally (not only on first-seed) so a host-mounted .env that was
+# created with a permissive umask gets tightened on every container start.
+if [ -f "$HERMES_HOME/.env" ]; then
+    chown hermes:hermes "$HERMES_HOME/.env" 2>/dev/null || true
+    chmod 600 "$HERMES_HOME/.env" 2>/dev/null || true
+fi
+
+# auth.json: bootstrap from env on first boot only. Same semantics as the
+# pre-s6 entrypoint — the [ ! -f ] guard is critical to avoid clobbering
+# rotated refresh tokens on container restart.
+if [ ! -f "$HERMES_HOME/auth.json" ] && [ -n "${HERMES_AUTH_JSON_BOOTSTRAP:-}" ]; then
+    printf '%s' "$HERMES_AUTH_JSON_BOOTSTRAP" > "$HERMES_HOME/auth.json"
+    chown hermes:hermes "$HERMES_HOME/auth.json" 2>/dev/null || true
+    chmod 600 "$HERMES_HOME/auth.json"
+fi
+
+# --- Sync bundled skills ---
+# Invoke the venv's python by absolute path so we don't need a `sh -c`
+# wrapper to source the activate script. This is safe because
+# skills_sync.py doesn't depend on any environment exports beyond what
+# the python binary's own bin-stub already sets up (sys.path is rooted
+# at the venv's site-packages by virtue of running .venv/bin/python).
+if [ -d "$INSTALL_DIR/skills" ]; then
+    s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" \
+        || echo "[stage2] Warning: skills_sync.py failed; continuing"
+fi
+
 echo "[stage2] Setup complete; starting user services"
