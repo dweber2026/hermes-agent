@@ -107,21 +107,19 @@ seed_one() {
         s6-setuidgid hermes cp "$INSTALL_DIR/$src" "$HERMES_HOME/$dest"
     fi
 }
-# Build .env from individual Railway env vars if any are set.
-# This is more reliable than a multiline HERMES_ENV_BOOTSTRAP var.
-# Individual vars (OPENROUTER_API_KEY etc.) are always written when present,
-# overwriting any stale volume .env. This runs on every boot.
-_dot_env_written=false
-{
-  [ -n "${OPENROUTER_API_KEY:-}" ]     && printf 'OPENROUTER_API_KEY=%s\n' "$OPENROUTER_API_KEY"
-  [ -n "${OPENAI_API_KEY:-}" ]         && printf 'OPENAI_API_KEY=%s\n' "$OPENAI_API_KEY"
-  [ -n "${TELEGRAM_BOT_TOKEN:-}" ]     && printf 'TELEGRAM_BOT_TOKEN=%s\n' "$TELEGRAM_BOT_TOKEN"
-  [ -n "${TELEGRAM_ALLOWED_USERS:-}" ] && printf 'TELEGRAM_ALLOWED_USERS=%s\n' "$TELEGRAM_ALLOWED_USERS"
-  [ -n "${TELEGRAM_HOME_CHANNEL:-}" ]  && printf 'TELEGRAM_HOME_CHANNEL=%s\n' "$TELEGRAM_HOME_CHANNEL"
-  [ -n "${LLM_MODEL:-}" ]              && printf 'LLM_MODEL=%s\n' "$LLM_MODEL"
-  [ -n "${ANTHROPIC_API_KEY:-}" ]      && printf 'ANTHROPIC_API_KEY=%s\n' "$ANTHROPIC_API_KEY"
-} | s6-setuidgid hermes tee "$HERMES_HOME/.env" >/dev/null && _dot_env_written=true
-if [ "$_dot_env_written" = true ]; then
+# Seed .env from Railway environment variables on every boot.
+# Each key written individually using printf key=value format.
+# Overwrites any stale .env from a prior crash.
+_env_out=""
+for _var in OPENROUTER_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY TELEGRAM_BOT_TOKEN TELEGRAM_ALLOWED_USERS TELEGRAM_HOME_CHANNEL LLM_MODEL; do
+    eval "_val=\${${_var}:-}"
+    if [ -n "$_val" ]; then
+        _env_out="${_env_out}${_var}=${_val}
+"
+    fi
+done
+if [ -n "$_env_out" ]; then
+    printf '%s' "$_env_out" | s6-setuidgid hermes tee "$HERMES_HOME/.env" >/dev/null
     chown hermes:hermes "$HERMES_HOME/.env" 2>/dev/null || true
     chmod 600 "$HERMES_HOME/.env" 2>/dev/null || true
     echo "[stage2] Seeded .env from Railway environment variables"
