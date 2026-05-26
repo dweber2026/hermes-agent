@@ -160,8 +160,10 @@ fi
 
 echo "[stage2] Setup complete; starting user services"
 
-# Seed .env from Railway env vars using Python script running as root.
-python3 "$INSTALL_DIR/docker/seed-env.py" || true
+# DO NOT seed .env from .env.example — Railway injects API keys as env vars directly.
+# If .env exists on the volume (from prior session), load it. If not, Hermes reads
+# OPENROUTER_API_KEY / TELEGRAM_BOT_TOKEN etc. directly from os.environ.
+# Seeding a blank .env.example would override Railway env vars via dotenv override=True.
 seed_one "config.yaml" "cli-config.yaml.example"
 seed_one "SOUL.md" "docker/SOUL.md"
 
