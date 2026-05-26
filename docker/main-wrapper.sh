@@ -13,7 +13,26 @@
 # workload runs unprivileged (UID 10000 by default).
 set -e
 
-cd /opt/data
+# Resolve HERMES_HOME from s6 container environment (Railway env vars live here)
+# s6-overlay stores Railway-injected env vars in /run/s6/container_environment/
+_hermes_home="/opt/data"
+if [ -f /run/s6/container_environment/HERMES_HOME ]; then
+    _hermes_home=$(cat /run/s6/container_environment/HERMES_HOME)
+elif [ -n "${HERMES_HOME:-}" ]; then
+    _hermes_home="$HERMES_HOME"
+fi
+export HERMES_HOME="$_hermes_home"
+
+# If .env exists but has no real API keys (stale blank seed from .env.example),
+# remove it so Hermes falls back to reading keys from os.environ (Railway vars).
+if [ -f "$HERMES_HOME/.env" ]; then
+    if ! grep -q "OPENROUTER_API_KEY=sk\|OPENAI_API_KEY=sk\|ANTHROPIC_API_KEY=sk\|OPENROUTER_API_KEY=[a-zA-Z0-9_-]" "$HERMES_HOME/.env" 2>/dev/null; then
+        echo "[main-wrapper] Removing stale blank .env (no API keys found)"
+        rm -f "$HERMES_HOME/.env"
+    fi
+fi
+
+cd "$_hermes_home"
 # shellcheck disable=SC1091
 . /opt/hermes/.venv/bin/activate
 
