@@ -107,9 +107,8 @@ seed_one() {
         s6-setuidgid hermes cp "$INSTALL_DIR/$src" "$HERMES_HOME/$dest"
     fi
 }
-# Seed .env from Railway environment variables on every boot.
-# Each key written individually using printf key=value format.
-# Overwrites any stale .env from a prior crash.
+# Seed .env from Railway environment variables (runs as root, so env is accessible).
+# Write directly to file then chown — avoids s6-setuidgid env-drop issue.
 _env_out=""
 for _var in OPENROUTER_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY TELEGRAM_BOT_TOKEN TELEGRAM_ALLOWED_USERS TELEGRAM_HOME_CHANNEL LLM_MODEL; do
     eval "_val=\${${_var}:-}"
@@ -119,10 +118,12 @@ for _var in OPENROUTER_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY TELEGRAM_BOT_TOK
     fi
 done
 if [ -n "$_env_out" ]; then
-    printf '%s' "$_env_out" | s6-setuidgid hermes tee "$HERMES_HOME/.env" >/dev/null
+    mkdir -p "$HERMES_HOME"
+    printf "%s" "$_env_out" > "$HERMES_HOME/.env"
     chown hermes:hermes "$HERMES_HOME/.env" 2>/dev/null || true
-    chmod 600 "$HERMES_HOME/.env" 2>/dev/null || true
-    echo "[stage2] Seeded .env from Railway environment variables"
+    chmod 600 "$HERMES_HOME/.env"
+    _key_count=$(printf "%s" "$_env_out" | grep -c "=")
+    echo "[stage2] Seeded .env from Railway env vars (${_key_count} keys)"
 else
     seed_one ".env" ".env.example"
 fi
