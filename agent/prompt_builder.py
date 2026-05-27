@@ -62,6 +62,7 @@ def _scan_context_content(content: str, filename: str) -> str:
 
 def _find_git_root(start: Path) -> Optional[Path]:
     """Walk *start* and its parents looking for a ``.git`` directory.
+
     Returns the directory containing ``.git``, or ``None`` if we hit the
     filesystem root without finding one.
     """
@@ -94,6 +95,7 @@ def _find_hermes_md(cwd: Path) -> Optional[Path]:
         if stop_at and directory == stop_at:
             break
     return None
+
 
 def _strip_yaml_frontmatter(content: str) -> str:
     """Remove optional YAML frontmatter (``---`` delimited) from *content*.
