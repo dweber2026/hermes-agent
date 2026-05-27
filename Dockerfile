@@ -131,6 +131,7 @@ RUN uv sync --frozen --no-install-project --extra all --extra messaging
 
 # ---------- Source code ----------
 # .dockerignore excludes node_modules, so the installs above survive.
+ARG CACHE_BUST=1
 COPY --chown=hermes:hermes . .
 
 # Build browser dashboard and terminal UI assets.
