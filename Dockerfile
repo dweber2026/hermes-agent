@@ -197,6 +197,8 @@ ENV HERMES_HOME=/opt/data
 # subprocess that doesn't activate the venv first still find hermes.
 ENV PATH="/opt/hermes/.venv/bin:/opt/data/.local/bin:${PATH}"
 RUN mkdir -p /opt/data
+RUN mkdir -p /root/.git && chmod 755 /root/.git
+RUN touch /root/.hermes.md && chmod 644 /root/.hermes.md
 # VOLUME removed — Railway uses its own volume system (mounted at /data via Railway Volumes)
 
 # s6-overlay's /init is PID 1. It sets up the supervision tree, runs
