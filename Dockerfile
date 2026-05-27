@@ -133,7 +133,7 @@ RUN uv sync --frozen --no-install-project --extra all --extra messaging
 # .dockerignore excludes node_modules, so the installs above survive.
 ARG CACHE_BUST=1
 COPY --chown=hermes:hermes . .
-
+RUN echo "cache-bust-7" > /dev/null
 # Build browser dashboard and terminal UI assets.
 RUN cd web && npm run build && \
     cd ../ui-tui && npm run build
