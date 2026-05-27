@@ -133,7 +133,7 @@ RUN uv sync --frozen --no-install-project --extra all --extra messaging
 # .dockerignore excludes node_modules, so the installs above survive.
 ARG CACHE_BUST=1
 COPY --chown=hermes:hermes . .
-RUN find /opt/hermes -name "*.pyc" -delete && find /opt/hermes -name "__pycache__" -type d -exec rm -rf {} + 2>/dev/null || true
+RUN find /opt/hermes/agent -name "*.py" -exec sed -i 's/\t/    /g' {} +
 RUN echo "cache-bust-7" > /dev/null
 # Build browser dashboard and terminal UI assets.
 RUN cd web && npm run build && \
