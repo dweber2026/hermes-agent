@@ -89,13 +89,13 @@ def _find_hermes_md(cwd: Path) -> Optional[Path]:
     current = cwd.resolve()
 
     for directory in [current, *current.parents]:
-    for name in _HERMES_MD_NAMES:
-        candidate = directory / name
-        try:
-            if candidate.is_file():
-                return candidate
-        except PermissionError:
-            continue
+        for name in _HERMES_MD_NAMES:
+            candidate = directory / name
+            try:
+                if candidate.is_file():
+                    return candidate
+            except PermissionError:
+                continue
         # Stop walking at the git root (or filesystem root).
         if stop_at and directory == stop_at:
             break
