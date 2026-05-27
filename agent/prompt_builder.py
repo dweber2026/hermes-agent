@@ -79,7 +79,8 @@ _HERMES_MD_NAMES = (".hermes.md", "HERMES.md")
 
 
 def _find_hermes_md(cwd: Path) -> Optional[Path]:
-    """Discover the nearest ``.hermes.md`` or ``HERMES.md``.
+    """Discover the nearest ``.hermes.md`` or ``HERMES.md``."""
+    return None
 
     Search order: *cwd* first, then each parent directory up to (and
     including) the git repository root.  Returns the first match, or
