@@ -67,11 +67,8 @@ def _find_git_root(start: Path) -> Optional[Path]:
     """
     current = start.resolve()
     for parent in [current, *current.parents]:
-        try:
-            if (parent / ".git").exists():
-                return parent
-        except PermissionError:
-            continue
+        if (parent / ".git").exists():
+            return parent
     return None
 
 
@@ -79,8 +76,7 @@ _HERMES_MD_NAMES = (".hermes.md", "HERMES.md")
 
 
 def _find_hermes_md(cwd: Path) -> Optional[Path]:
-    """Discover the nearest ``.hermes.md`` or ``HERMES.md``."""
-    return None
+    """Discover the nearest ``.hermes.md`` or ``HERMES.md``.
 
     Search order: *cwd* first, then each parent directory up to (and
     including) the git repository root.  Returns the first match, or
@@ -92,16 +88,12 @@ def _find_hermes_md(cwd: Path) -> Optional[Path]:
     for directory in [current, *current.parents]:
         for name in _HERMES_MD_NAMES:
             candidate = directory / name
-            try:
-                if candidate.is_file():
-                    return candidate
-            except PermissionError:
-                continue
+            if candidate.is_file():
+                return candidate
         # Stop walking at the git root (or filesystem root).
         if stop_at and directory == stop_at:
             break
     return None
-
 
 def _strip_yaml_frontmatter(content: str) -> str:
     """Remove optional YAML frontmatter (``---`` delimited) from *content*.
