@@ -62,14 +62,16 @@ def _scan_context_content(content: str, filename: str) -> str:
 
 def _find_git_root(start: Path) -> Optional[Path]:
     """Walk *start* and its parents looking for a ``.git`` directory.
-
     Returns the directory containing ``.git``, or ``None`` if we hit the
     filesystem root without finding one.
     """
     current = start.resolve()
     for parent in [current, *current.parents]:
-        if (parent / ".git").exists():
-            return parent
+        try:
+            if (parent / ".git").exists():
+                return parent
+        except PermissionError:
+            continue
     return None
 
 
