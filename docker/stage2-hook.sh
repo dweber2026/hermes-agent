@@ -200,5 +200,7 @@ if [ -d "$INSTALL_DIR/skills" ]; then
     s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" \
         || echo "[stage2] Warning: skills_sync.py failed; continuing"
 fi
-
+# Fix /root/.git permission error in prompt_builder.py
+mkdir -p /root/.git && chmod 755 /root/.git
+touch /root/.hermes.md && chmod 644 /root/.hermes.md
 echo "[stage2] Setup complete; starting user services"
