@@ -207,8 +207,8 @@ touch /root/.hermes.md && chmod 644 /root/.hermes.md
 
 # Set model in config.yaml if it exists
 if [ -f "$HERMES_HOME/config.yaml" ] && [ -n "${LLM_MODEL:-}" ]; then
-    sed -i "s|^model:.*|model: $LLM_MODEL|" "$HERMES_HOME/config.yaml" || true
+    sed -i "s|^  default:.*|  default: \"$LLM_MODEL\"|" "$HERMES_HOME/config.yaml" || true
+    sed -i "s|^    default:.*|    default: \"$LLM_MODEL\"|" "$HERMES_HOME/config.yaml" || true
 fi
-# Debug - show model config
-echo "[stage2] Config model line: $(grep -i model $HERMES_HOME/config.yaml 2>/dev/null || echo 'not found')"
+
 echo "[stage2] Setup complete; starting user services"
