@@ -200,15 +200,21 @@ if [ -d "$INSTALL_DIR/skills" ]; then
     s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" \
         || echo "[stage2] Warning: skills_sync.py failed; continuing"
 fi
-# Fix /root directory permissions so hermes user can traverse it
-chmod 755 /root
-mkdir -p /root/.git && chmod 755 /root/.git
-touch /root/.hermes.md && chmod 644 /root/.hermes.md
-
-# Set model in config.yaml if it exists
+# Force model setting in config.yaml
 if [ -f "$HERMES_HOME/config.yaml" ] && [ -n "${LLM_MODEL:-}" ]; then
-    sed -i "s|^  default:.*|  default: \"$LLM_MODEL\"|" "$HERMES_HOME/config.yaml" || true
-    sed -i "s|^    default:.*|    default: \"$LLM_MODEL\"|" "$HERMES_HOME/config.yaml" || true
+    python3 -c "
+import re, os
+path = os.environ.get('HERMES_HOME', '/opt/data') + '/config.yaml'
+with open(path, 'r') as f:
+    content = f.read()
+# Replace the model default line
+content = re.sub(r'(model:\s*\n\s*)(#[^\n]*\n)*(\s*default:\s*)[^\n]*', 
+    r'\g<1>\g<3>\"' + os.environ.get('LLM_MODEL', '') + '\"', content)
+with open(path, 'w') as f:
+    f.write(content)
+print('[stage2] Model set to: ' + os.environ.get('LLM_MODEL', ''))
+" 2>/dev/null || true
+fi
 fi
 
 echo "[stage2] Setup complete; starting user services"
