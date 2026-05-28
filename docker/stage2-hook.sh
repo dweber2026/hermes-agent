@@ -205,11 +205,8 @@ chmod 755 /root
 mkdir -p /root/.git && chmod 755 /root/.git
 touch /root/.hermes.md && chmod 644 /root/.hermes.md
 
-# Remove stale config.yaml so it gets reseeded with correct model from env vars
-if [ -f "$HERMES_HOME/config.yaml" ] && [ -n "${LLM_MODEL:-}" ]; then
-    grep -q "^  default: \"$LLM_MODEL\"" "$HERMES_HOME/config.yaml" 2>/dev/null || \
-    rm -f "$HERMES_HOME/config.yaml"
-
-fi
+# Always delete config.yaml so it gets reseeded fresh with correct model
+rm -f "$HERMES_HOME/config.yaml"
+echo "[stage2] Deleted config.yaml for fresh reseed"
 
 echo "[stage2] Setup complete; starting user services"
