@@ -205,4 +205,9 @@ chmod 755 /root
 mkdir -p /root/.git && chmod 755 /root/.git
 touch /root/.hermes.md && chmod 644 /root/.hermes.md
 
+# Set model in config.yaml if it exists
+if [ -f "$HERMES_HOME/config.yaml" ] && [ -n "${LLM_MODEL:-}" ]; then
+    sed -i "s|^model:.*|model: $LLM_MODEL|" "$HERMES_HOME/config.yaml" || true
+fi
+
 echo "[stage2] Setup complete; starting user services"
