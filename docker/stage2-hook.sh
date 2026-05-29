@@ -118,10 +118,10 @@ for _var in OPENROUTER_API_KEY OPENAI_API_KEY ANTHROPIC_API_KEY TELEGRAM_BOT_TOK
     fi
 done
 if [ -n "$_env_out" ]; then
-    mkdir -p "$HERMES_HOME"
-    printf "%s" "$_env_out" > "$HERMES_HOME/.env"
-    chown hermes:hermes "$HERMES_HOME/.env" 2>/dev/null || true
-    chmod 600 "$HERMES_HOME/.env"
+mkdir -p "$HERMES_HOME"
+printf "%s" "$_env_out" > "$HERMES_HOME/.env"
+echo "LLM_MODEL=anthropic/claude-sonnet-4-6" >> "$HERMES_HOME/.env"
+chmod 600 "$HERMES_HOME/.env"
     _key_count=$(printf "%s" "$_env_out" | grep -c "=")
     echo "[stage2] Seeded .env from Railway env vars (${_key_count} keys)"
 else
