@@ -127,6 +127,7 @@ if [ -n "$_env_out" ]; then
 else
     seed_one ".env" ".env.example"
 fi
+rm -f "$HERMES_HOME/config.yaml"
 seed_one "config.yaml" "cli-config.yaml.example"
 seed_one "SOUL.md" "docker/SOUL.md"
 
@@ -206,7 +207,6 @@ mkdir -p /root/.git && chmod 755 /root/.git
 touch /root/.hermes.md && chmod 644 /root/.hermes.md
 
 # Always delete config.yaml so it gets reseeded fresh with correct model
-rm -f "$HERMES_HOME/config.yaml"
 echo "[stage2] Deleted config.yaml for fresh reseed"
 
 # Force write model to .env file
