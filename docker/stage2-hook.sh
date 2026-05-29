@@ -17,7 +17,7 @@
 
 set -eu
 
-HERMES_HOME="${HERMES_HOME:-/opt/data}"
+HERMES_HOME="${HERMES_HOME:-/data/.hermes}"
 INSTALL_DIR="/opt/hermes"
 
 # --- UID/GID remap ---
