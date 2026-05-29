@@ -129,6 +129,12 @@ else
 fi
 rm -f "$HERMES_HOME/config.yaml"
 seed_one "config.yaml" "cli-config.yaml.example"
+rm -f "$HERMES_HOME/config.yaml"
+seed_one "config.yaml" "cli-config.yaml.example"
+echo "[stage2] Template model: $(grep 'default:' $INSTALL_DIR/cli-config.yaml.example 2>/dev/null || echo 'template missing')"
+echo "[stage2] Config model: $(grep 'default:' $HERMES_HOME/config.yaml 2>/dev/null || echo 'config missing')"
+echo "[stage2] LLM_MODEL env: ${LLM_MODEL:-UNSET}"
+seed_one "SOUL.md" "docker/SOUL.md"
 seed_one "SOUL.md" "docker/SOUL.md"
 
 # .env holds API keys and secrets — restrict to owner-only access. Applied
