@@ -167,55 +167,7 @@ fi
 
 echo "[stage2] Setup complete; starting user services"
 
-# DO NOT seed .env from .env.example — Railway injects API keys as env vars directly.
-# If .env exists on the volume (from prior session), load it. If not, Hermes reads
-# OPENROUTER_API_KEY / TELEGRAM_BOT_TOKEN etc. directly from os.environ.
-# Seeding a blank .env.example would override Railway env vars via dotenv override=True.
-seed_one "config.yaml" "cli-config.yaml.example"
-seed_one "SOUL.md" "docker/SOUL.md"
-
-# .env holds API keys and secrets — restrict to owner-only access. Applied
-# unconditionally (not only on first-seed) so a host-mounted .env that was
-# created with a permissive umask gets tightened on every container start.
-if [ -f "$HERMES_HOME/.env" ]; then
-    chown hermes:hermes "$HERMES_HOME/.env" 2>/dev/null || true
-    chmod 600 "$HERMES_HOME/.env" 2>/dev/null || true
-fi
-
-# auth.json: bootstrap from env on first boot only. Same semantics as the
-# pre-s6 entrypoint — the [ ! -f ] guard is critical to avoid clobbering
-# rotated refresh tokens on container restart.
-if [ ! -f "$HERMES_HOME/auth.json" ] && [ -n "${HERMES_AUTH_JSON_BOOTSTRAP:-}" ]; then
-    printf '%s' "$HERMES_AUTH_JSON_BOOTSTRAP" > "$HERMES_HOME/auth.json"
-    chown hermes:hermes "$HERMES_HOME/auth.json" 2>/dev/null || true
-    chmod 600 "$HERMES_HOME/auth.json"
-fi
-
-# --- Sync bundled skills ---
-# Invoke the venv's python by absolute path so we don't need a `sh -c`
-# wrapper to source the activate script. This is safe because
-# skills_sync.py doesn't depend on any environment exports beyond what
-# the python binary's own bin-stub already sets up (sys.path is rooted
-# at the venv's site-packages by virtue of running .venv/bin/python).
-if [ -d "$INSTALL_DIR/skills" ]; then
-    s6-setuidgid hermes "$INSTALL_DIR/.venv/bin/python" "$INSTALL_DIR/tools/skills_sync.py" \
-        || echo "[stage2] Warning: skills_sync.py failed; continuing"
-fi
 # Fix /root directory permissions so hermes user can traverse it
 chmod 755 /root
 mkdir -p /root/.git && chmod 755 /root/.git
 touch /root/.hermes.md && chmod 644 /root/.hermes.md
-
-# Always delete config.yaml so it gets reseeded fresh with correct model
-echo "[stage2] Deleted config.yaml for fresh reseed"
-
-# Force write model to .env file
-if [ -n "${LLM_MODEL:-}" ]; then
-    if [ -f "$HERMES_HOME/.env" ]; then
-        sed -i '/^LLM_MODEL=/d' "$HERMES_HOME/.env"
-        echo "LLM_MODEL=$LLM_MODEL" >> "$HERMES_HOME/.env"
-    else
-        echo "LLM_MODEL=$LLM_MODEL" > "$HERMES_HOME/.env"
-    fi
-    echo "[stage2] Forced LLM_MODEL=$LLM_MODEL into .env"
-fi
