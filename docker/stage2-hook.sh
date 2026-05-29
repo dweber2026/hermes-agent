@@ -219,7 +219,3 @@ if [ -n "${LLM_MODEL:-}" ]; then
     fi
     echo "[stage2] Forced LLM_MODEL=$LLM_MODEL into .env"
 fi
-fi
-echo "[stage2] Deleted config.yaml for fresh reseed"
-
-echo "[stage2] Setup complete; starting user services"
