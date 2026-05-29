@@ -209,4 +209,17 @@ touch /root/.hermes.md && chmod 644 /root/.hermes.md
 rm -f "$HERMES_HOME/config.yaml"
 echo "[stage2] Deleted config.yaml for fresh reseed"
 
+# Force write model to .env file
+if [ -n "${LLM_MODEL:-}" ]; then
+    if [ -f "$HERMES_HOME/.env" ]; then
+        sed -i '/^LLM_MODEL=/d' "$HERMES_HOME/.env"
+        echo "LLM_MODEL=$LLM_MODEL" >> "$HERMES_HOME/.env"
+    else
+        echo "LLM_MODEL=$LLM_MODEL" > "$HERMES_HOME/.env"
+    fi
+    echo "[stage2] Forced LLM_MODEL=$LLM_MODEL into .env"
+fi
+fi
+echo "[stage2] Deleted config.yaml for fresh reseed"
+
 echo "[stage2] Setup complete; starting user services"
